@@ -1,17 +1,22 @@
-# Використовуємо JDK 17
-FROM eclipse-temurin:17-jdk-jammy AS build
+# Етап 1: Збірка (використовуємо JDK 21)
+FROM eclipse-temurin:21-jdk-jammy AS build
 COPY . /app
 WORKDIR /app
 
-# Даємо права та збираємо, ігноруючи можливі помилки скриптів
+# Даємо права на виконання
 RUN chmod +x gradlew
-RUN ./gradlew shadowJar --no-daemon --stacktrace
 
-# Етап запуску
-FROM eclipse-temurin:17-jre-jammy
+# Збірка з лімітом пам'яті для Gradle (щоб вписатися в ліміти Render)
+RUN ./gradlew shadowJar --no-daemon -Dorg.gradle.jvmargs="-Xmx384m -XX:MaxMetaspaceSize=128m"
+
+# Етап 2: Запуск (використовуємо JRE 21)
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
-# Використовуємо більш точний шлях до результату збірки
-COPY --from=build /app/build/libs/*-all.jar /app/app.jar
+
+# Оскільки rootProject.name = "EcomDiplomaKtor", копіюємо результат
+COPY --from=build /app/build/libs/EcomDiplomaKtor-1.0-SNAPSHOT-all.jar /app/app.jar
+
 EXPOSE 8080
-# Додаємо параметр порту для Netty
-ENTRYPOINT ["java", "-Dktor.deployment.port=8080", "-jar", "/app/app.jar"]
+
+# Запуск з лімітом пам'яті
+ENTRYPOINT ["java", "-Xmx384m", "-jar", "/app/app.jar"]

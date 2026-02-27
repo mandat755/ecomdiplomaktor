@@ -30,4 +30,8 @@ tasks {
             attributes("Main-Class" to "org.example.MainKt")
         }
     }
+
+    kotlin {
+        jvmToolchain(21)
+    }
 }
