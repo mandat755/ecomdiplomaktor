@@ -1,15 +1,17 @@
-# Етап 1: Збірка проекту
+# Використовуємо JDK 17
 FROM eclipse-temurin:17-jdk-jammy AS build
 COPY . /app
 WORKDIR /app
-# Даємо права на виконання грайдлу і збираємо "товстий" JAR
-RUN chmod +x gradlew
-RUN ./gradlew shadowJar --no-daemon
 
-# Етап 2: Запуск
+# Даємо права та збираємо, ігноруючи можливі помилки скриптів
+RUN chmod +x gradlew
+RUN ./gradlew shadowJar --no-daemon --stacktrace
+
+# Етап запуску
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
-# Копіюємо JAR файл із першого етапу (назва має збігатися з твоєю)
+# Використовуємо більш точний шлях до результату збірки
 COPY --from=build /app/build/libs/*-all.jar /app/app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# Додаємо параметр порту для Netty
+ENTRYPOINT ["java", "-Dktor.deployment.port=8080", "-jar", "/app/app.jar"]
